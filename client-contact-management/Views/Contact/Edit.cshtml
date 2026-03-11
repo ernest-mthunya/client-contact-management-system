@@ -1,0 +1,193 @@
+﻿@model ContactRequest
+
+@{
+    ViewData["Title"] = "Edit Contact";
+    var linkedClients = ViewBag.LinkedClients as List<ClientResponse> ?? new();
+    var allClients = ViewBag.AllClients as IEnumerable<ClientResponse> ?? Enumerable.Empty<ClientResponse>();
+    var linkedIds = linkedClients.Select(c => c.Id).ToHashSet();
+    var availableClients = allClients.Where(c => !linkedIds.Contains(c.Id)).ToList();
+}
+
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a asp-action="Index" class="text-muted small text-decoration-none">← Contacts</a>
+            <h2 class="mb-0 mt-1">Edit Contact</h2>
+        </div>
+    </div>
+
+    <ul class="nav nav-tabs mb-0" id="contactTabs">
+        <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-general">General</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-clients">
+                Client(s)
+                <span class="badge bg-secondary ms-1">@linkedClients.Count</span>
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content border border-top-0 rounded-bottom p-4 bg-white shadow-sm">
+
+        <div class="tab-pane fade show active" id="tab-general">
+            <form asp-action="Edit" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Id" />
+
+                <div class="mb-3" style="max-width:480px">
+                    <label asp-for="Name" class="form-label fw-semibold"></label>
+                    <input asp-for="Name" class="form-control" />
+                    <span asp-validation-for="Name" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-3" style="max-width:480px">
+                    <label asp-for="Surname" class="form-label fw-semibold"></label>
+                    <input asp-for="Surname" class="form-control" />
+                    <span asp-validation-for="Surname" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-3" style="max-width:480px">
+                    <label asp-for="Email" class="form-label fw-semibold"></label>
+                    <input asp-for="Email" class="form-control" />
+                    <span asp-validation-for="Email" class="text-danger small"></span>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <a asp-action="Index" class="btn btn-outline-secondary ms-2">Cancel</a>
+            </form>
+        </div>
+
+        <div class="tab-pane fade" id="tab-clients">
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">Linked Clients</h5>
+                <button type="button"
+                        class="btn btn-sm btn-primary"
+                        data-bs-toggle="modal"
+                        data-bs-target="#linkClientModal"
+                    @(availableClients.Count == 0 ? "disabled" : "")
+                        title="@(availableClients.Count == 0 ? "No more clients to link" : "Link a client")">
+                    + Link Client
+                </button>
+            </div>
+
+            @if (!linkedClients.Any())
+            {
+                <p class="text-muted fst-italic">No contact(s) found.</p>
+            }
+            else
+            {
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="text-align:left">Client Name</th>
+                            <th style="text-align:left">Client Code</th>
+                            <th style="text-align:left; width:80px"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var client in linkedClients)
+                        {
+                            <tr>
+                                <td>@client.Name</td>
+                                <td>@client.ClientCode</td>
+                                <td>
+                                    <a asp-action="UnlinkClient"
+                                           asp-route-contactId="@Model.Id"
+                                           asp-route-clientId="@client.Id"
+                                           class="btn btn-sm btn-outline-danger"
+                                           onclick="return confirm('Unlink @client.Name?')">
+                                        Unlink
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="linkClientModal" tabindex="-1" aria-labelledby="linkClientModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="linkClientModalLabel">Link a Client</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body p-0">
+
+                <div class="p-3 border-bottom">
+                    <input type="text"
+                           id="clientSearch"
+                           class="form-control"
+                           placeholder="Search by name or code…"
+                           oninput="filterClients(this.value)" />
+                </div>
+
+                <ul class="list-group list-group-flush" id="clientList">
+                    @if (!availableClients.Any())
+                    {
+                        <li class="list-group-item text-muted fst-italic">All clients are already linked.</li>
+                    }
+                    else
+                    {
+                        @foreach (var client in availableClients.OrderBy(c => c.Name))
+                        {
+                            <li class="list-group-item list-group-item-action client-item"
+                                data-search="@($"{client.Name} {client.ClientCode}".ToLower())">
+                                <form asp-action="LinkClient" method="post" class="d-flex justify-content-between align-items-center">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="contactId" value="@Model.Id" />
+                                    <input type="hidden" name="clientId" value="@client.Id" />
+                                    <div>
+                                        <div class="fw-semibold">@client.Name</div>
+                                        <small class="text-muted">@client.ClientCode</small>
+                                    </div>
+                                    <button type="submit" class="btn btn-sm btn-primary ms-3 flex-shrink-0">Link</button>
+                                </form>
+                            </li>
+                        }
+                    }
+                </ul>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        function filterClients(query) {
+            const q = query.toLowerCase().trim();
+            document.querySelectorAll('#clientList .client-item').forEach(item => {
+                item.style.display = item.dataset.search.includes(q) ? '' : 'none';
+            });
+        }
+
+        document.getElementById('linkClientModal').addEventListener('hidden.bs.modal', () => {
+            const input = document.getElementById('clientSearch');
+            if (input) { input.value = ''; filterClients(''); }
+        });
+
+        // Auto-open Clients tab if redirected back after link/unlink
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('tab') === 'clients') {
+            const tabEl = document.querySelector('[data-bs-target="#tab-clients"]');
+            if (tabEl) bootstrap.Tab.getOrCreateInstance(tabEl).show();
+        }
+    </script>
+}

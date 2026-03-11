@@ -10,6 +10,6 @@ namespace client_contact_management.Models
 
         public string? ClientCode { get; set; }
 
-        public int? Id { get; set; }
+        public int Id { get; set; }
     }
 }

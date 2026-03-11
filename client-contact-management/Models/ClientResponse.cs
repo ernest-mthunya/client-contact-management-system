@@ -2,12 +2,10 @@
 {
     public class ClientResponse
     {
-        public required string Name { get; set; }
-
-        public required string ClientCode { get; set; }
-
-        public required int NumberOfContactLinked { get; set; }
-
-        public required int Id { get; set; }
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string ClientCode { get; set; } = string.Empty;
+        public int NumberOfContactLinked { get; set; }
+        public List<ContactResponse> LinkedContacts { get; set; } = new();
     }
 }

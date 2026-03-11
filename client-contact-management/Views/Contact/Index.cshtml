@@ -1,0 +1,45 @@
+﻿@model IEnumerable<ContactResponse>
+
+@{
+    ViewData["Title"] = "Contacts";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Contacts</h2>
+        <a asp-action="Create" class="btn btn-primary">+ New Contact</a>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <p class="text-muted fst-italic">No contact(s) found.</p>
+    }
+    else
+    {
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th style="text-align:left">Name</th>
+                    <th style="text-align:left">Surname</th>
+                    <th style="text-align:left">Email Address</th>
+                    <th style="text-align:center">No. of linked clients</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var contact in Model)
+                {
+                    <tr>
+                        <td style="text-align:left">@contact.Name</td>
+                        <td style="text-align:left">@contact.Surname</td>
+                        <td style="text-align:left">@contact.Email</td>
+                        <td style="text-align:center">@contact.NumberOfClientsLinked</td>
+                        <td>
+                            <a asp-action="Edit" asp-route-id="@contact.Id" class="btn btn-sm btn-outline-secondary">Edit</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

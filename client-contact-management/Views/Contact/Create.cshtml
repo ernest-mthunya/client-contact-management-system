@@ -1,14 +1,14 @@
-﻿@model ClientRequest
+﻿@model ContactRequest
 
 @{
-    ViewData["Title"] = "New Client";
+    ViewData["Title"] = "New Contact";
 }
 
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <a asp-action="Index" class="text-muted small text-decoration-none">← Clients</a>
-            <h2 class="mb-0 mt-1">New Client</h2>
+            <a asp-action="Index" class="text-muted small text-decoration-none">← Contacts</a>
+            <h2 class="mb-0 mt-1">New Contact</h2>
         </div>
     </div>
 
@@ -28,6 +28,17 @@
                 <span asp-validation-for="Name" class="text-danger small"></span>
             </div>
 
+            <div class="mb-3" style="max-width:480px">
+                <label asp-for="Surname" class="form-label fw-semibold"></label>
+                <input asp-for="Surname" class="form-control" />
+                <span asp-validation-for="Surname" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3" style="max-width:480px">
+                <label asp-for="Email" class="form-label fw-semibold"></label>
+                <input asp-for="Email" class="form-control" />
+                <span asp-validation-for="Email" class="text-danger small"></span>
+            </div>
 
             <button type="submit" class="btn btn-primary">Save</button>
             <a asp-action="Index" class="btn btn-outline-secondary ms-2">Cancel</a>

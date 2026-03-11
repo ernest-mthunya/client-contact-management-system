@@ -1,13 +1,22 @@
-﻿namespace client_contact_management.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace client_contact_management.Models
 {
     public class ContactRequest
     {
-        public required string Name { get; set; }
+        public int Id { get; set; }
 
-        public required string Surname { get; set; }
+        [Required]
+        [Display(Name = "Name")]
+        public string Name { get; set; } = string.Empty;
 
-        public required string Email { get; set; }
+        [Required]
+        [Display(Name = "Surname")]
+        public string Surname { get; set; } = string.Empty;
 
-
+        [Required]
+        [EmailAddress]
+        [Display(Name = "Email Address")]
+        public string Email { get; set; } = string.Empty;
     }
 }

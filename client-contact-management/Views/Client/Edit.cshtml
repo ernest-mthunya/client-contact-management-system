@@ -2,34 +2,159 @@
 
 @{
     ViewData["Title"] = "Edit Client";
+    var linkedContacts = ViewBag.LinkedContacts as List<ContactResponse> ?? new();
+    var allContacts = ViewBag.AllContacts as IEnumerable<ContactResponse> ?? Enumerable.Empty<ContactResponse>();
+    var linkedIds = linkedContacts.Select(c => c.Id).ToHashSet();
+    var availableContacts = allContacts.Where(c => !linkedIds.Contains(c.Id)).ToList();
 }
 
 <div class="container mt-4">
-    <div class="row">
-        <div class="col-md-6 offset-md-3">
-            <div class="card shadow">
-                <div class="card-header bg-warning text-dark">
-                    <h4 class="mb-0">Edit Client Details</h4>
-                </div>
-                <div class="card-body">
-                    <form asp-action="Edit">
-                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-                        
-                        <input type="hidden" asp-for="Id" />
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a asp-action="Index" class="text-muted small text-decoration-none">← Clients</a>
+            <h2 class="mb-0 mt-1">Edit Client</h2>
+        </div>
+    </div>
 
-                        <div class="form-group mb-3">
-                            <label asp-for="Name" class="form-label fw-bold"></label>
-                            <input asp-for="Name" class="form-control" />
-                            <span asp-validation-for="Name" class="text-danger"></span>
-                        </div>
+    <ul class="nav nav-tabs mb-0" id="clientTabs">
+        <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-general">General</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-contacts">
+                Contact(s)
+                <span class="badge bg-secondary ms-1">@linkedContacts.Count</span>
+            </button>
+        </li>
+    </ul>
 
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-warning">Update Changes</button>
-                            <a asp-action="Index" class="btn btn-outline-secondary">Back to List</a>
-                        </div>
-                    </form>
+    <div class="tab-content border border-top-0 rounded-bottom p-4 bg-white shadow-sm">
+        <div class="tab-pane fade show active" id="tab-general">
+            <form asp-action="Edit" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Id" />
+
+                <div class="mb-3" style="max-width:480px">
+                    <label asp-for="Name" class="form-label fw-semibold"></label>
+                    <input asp-for="Name" class="form-control" />
+                    <span asp-validation-for="Name" class="text-danger small"></span>
                 </div>
+
+                @if (!string.IsNullOrEmpty(Model.ClientCode))
+                {
+                    <div class="mb-3" style="max-width:480px">
+                        <label asp-for="ClientCode" class="form-label fw-semibold"></label>
+                        <input asp-for="ClientCode" class="form-control" readonly />
+                    </div>
+                }
+
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <a asp-action="Index" class="btn btn-outline-secondary ms-2">Cancel</a>
+            </form>
+        </div>
+
+        <div class="tab-pane fade" id="tab-contacts">
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">Linked Contacts</h5>
+                <button type="button"
+                        class="btn btn-sm btn-primary"
+                        data-bs-toggle="modal"
+                        data-bs-target="#linkContactModal"
+                    @(availableContacts.Count == 0 ? "disabled" : "")
+                        title="@(availableContacts.Count == 0 ? "No more contacts to link" : "Link a contact")">
+                    + Link Contact
+                </button>
             </div>
+
+            @if (!linkedContacts.Any())
+            {
+                <p class="text-muted fst-italic">No contacts found.</p>
+            }
+            else
+            {
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="text-align:left">Full Name</th>
+                            <th style="text-align:left">Email Address</th>
+                            <th style="text-align:left; width:80px"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var contact in linkedContacts.OrderBy(c => c.Surname).ThenBy(c => c.Name))
+                        {
+                            <tr>
+                                <td>@contact.Surname @contact.Name</td>
+                                <td>@contact.Email</td>
+                                <td>
+                                    <a asp-action="UnlinkContact"
+                                           asp-route-clientId="@Model.Id"
+                                           asp-route-contactId="@contact.Id"
+                                           class="btn btn-sm btn-outline-danger"
+                                           onclick="return confirm('Unlink @(contact.Surname) @(contact.Name)?')">
+                                        Unlink
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="linkContactModal" tabindex="-1" aria-labelledby="linkContactModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="linkContactModalLabel">Link a Contact</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body p-0">
+
+                <div class="p-3 border-bottom">
+                    <input type="text"
+                           id="contactSearch"
+                           class="form-control"
+                           placeholder="Search by name or email…"
+                           oninput="filterContacts(this.value)" />
+                </div>
+
+                <ul class="list-group list-group-flush" id="contactList">
+                    @if (!availableContacts.Any())
+                    {
+                        <li class="list-group-item text-muted fst-italic">All contacts are already linked.</li>
+                    }
+                    else
+                    {
+                        @foreach (var contact in availableContacts.OrderBy(c => c.Surname).ThenBy(c => c.Name))
+                        {
+                            <li class="list-group-item list-group-item-action contact-item"
+                                data-search="@($"{contact.Surname} {contact.Name} {contact.Email}".ToLower())">
+                                <form asp-action="LinkContact" method="post" class="d-flex justify-content-between align-items-center">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="clientId" value="@Model.Id" />
+                                    <input type="hidden" name="contactId" value="@contact.Id" />
+                                    <div>
+                                        <div class="fw-semibold">@contact.Surname @contact.Name</div>
+                                        <small class="text-muted">@contact.Email</small>
+                                    </div>
+                                    <button type="submit" class="btn btn-sm btn-primary ms-3 flex-shrink-0">Link</button>
+                                </form>
+                            </li>
+                        }
+                    }
+                </ul>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+
         </div>
     </div>
 </div>
@@ -38,4 +163,30 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+    <script>
+        // Live search inside modal
+        function filterContacts(query) {
+            const q = query.toLowerCase().trim();
+            document.querySelectorAll('#contactList .contact-item').forEach(item => {
+                const match = item.dataset.search.includes(q);
+                item.style.display = match ? '' : 'none';
+            });
+        }
+
+        // Clear search when modal closes
+        document.getElementById('linkContactModal').addEventListener('hidden.bs.modal', () => {
+            const input = document.getElementById('contactSearch');
+            if (input) {
+                input.value = '';
+                filterContacts('');
+            }
+        });
+
+        // Auto-open Contacts tab if redirected back after link/unlink
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('tab') === 'contacts') {
+            const tabEl = document.querySelector('[data-bs-target="#tab-contacts"]');
+            if (tabEl) bootstrap.Tab.getOrCreateInstance(tabEl).show();
+        }
+    </script>
 }
