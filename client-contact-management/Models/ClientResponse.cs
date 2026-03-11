@@ -7,5 +7,7 @@
         public required string ClientCode { get; set; }
 
         public required int NumberOfContactLinked { get; set; }
+
+        public required int Id { get; set; }
     }
 }

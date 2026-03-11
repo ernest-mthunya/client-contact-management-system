@@ -1,4 +1,5 @@
 using client_contact_management.Data;
+using client_contact_management.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,6 +10,10 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<ClientContactManagementDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
            .LogTo(Console.WriteLine, LogLevel.Information));
+
+builder.Services.AddScoped<IClientService, ClientService>();
+builder.Services.AddScoped<IContactService, ContactService>();
+builder.Services.AddScoped<IClientCodeService, ClientCodeService>();
 
 var app = builder.Build();
 
