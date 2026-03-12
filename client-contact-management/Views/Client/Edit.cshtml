@@ -16,6 +16,8 @@
         </div>
     </div>
 
+    <div id="statusMessage" class="alert d-none mb-3" role="alert"></div>
+
     <ul class="nav nav-tabs mb-0" id="clientTabs">
         <li class="nav-item">
             <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-general">General</button>
@@ -23,7 +25,7 @@
         <li class="nav-item">
             <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-contacts">
                 Contact(s)
-                <span class="badge bg-secondary ms-1">@linkedContacts.Count</span>
+                <span class="badge bg-secondary ms-1" id="contactCount">@linkedContacts.Count</span>
             </button>
         </li>
     </ul>
@@ -54,11 +56,11 @@
         </div>
 
         <div class="tab-pane fade" id="tab-contacts">
-
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="mb-0">Linked Contacts</h5>
                 <button type="button"
                         class="btn btn-sm btn-primary"
+                        id="linkContactBtn"
                         data-bs-toggle="modal"
                         data-bs-target="#linkContactModal"
                     @(availableContacts.Count == 0 ? "disabled" : "")
@@ -69,53 +71,45 @@
 
             @if (!linkedContacts.Any())
             {
-                <p class="text-muted fst-italic">No contacts found.</p>
+                <p id="emptyContacts" class="text-muted fst-italic">No contacts found.</p>
             }
-            else
-            {
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th style="text-align:left">Full Name</th>
-                            <th style="text-align:left">Email Address</th>
-                            <th style="text-align:left; width:80px"></th>
+
+            <table class="table table-hover align-middle @(!linkedContacts.Any() ? "d-none" : "")" id="linkedContactsTable">
+                <thead class="table-light">
+                    <tr>
+                        <th style="text-align:left">Full Name</th>
+                        <th style="text-align:left">Email Address</th>
+                        <th style="width:80px"></th>
+                    </tr>
+                </thead>
+                <tbody id="linkedContactsBody">
+                    @foreach (var contact in linkedContacts.OrderBy(c => c.Surname).ThenBy(c => c.Name))
+                    {
+                        <tr id="contact-row-@contact.Id">
+                            <td>@contact.Surname @contact.Name</td>
+                            <td>@contact.Email</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-danger"
+                                        onclick="unlinkContact(@contact.Id, '@contact.Surname @contact.Name')">
+                                    Unlink
+                                </button>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var contact in linkedContacts.OrderBy(c => c.Surname).ThenBy(c => c.Name))
-                        {
-                            <tr>
-                                <td>@contact.Surname @contact.Name</td>
-                                <td>@contact.Email</td>
-                                <td>
-                                    <a asp-action="UnlinkContact"
-                                           asp-route-clientId="@Model.Id"
-                                           asp-route-contactId="@contact.Id"
-                                           class="btn btn-sm btn-outline-danger"
-                                           onclick="return confirm('Unlink @(contact.Surname) @(contact.Name)?')">
-                                        Unlink
-                                    </a>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            }
+                    }
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="linkContactModal" tabindex="-1" aria-labelledby="linkContactModalLabel" aria-hidden="true">
+<div class="modal fade" id="linkContactModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
-
             <div class="modal-header">
-                <h5 class="modal-title" id="linkContactModalLabel">Link a Contact</h5>
+                <h5 class="modal-title">Link a Contact</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-
             <div class="modal-body p-0">
-
                 <div class="p-3 border-bottom">
                     <input type="text"
                            id="contactSearch"
@@ -123,7 +117,6 @@
                            placeholder="Search by name or email…"
                            oninput="filterContacts(this.value)" />
                 </div>
-
                 <ul class="list-group list-group-flush" id="contactList">
                     @if (!availableContacts.Any())
                     {
@@ -134,27 +127,28 @@
                         @foreach (var contact in availableContacts.OrderBy(c => c.Surname).ThenBy(c => c.Name))
                         {
                             <li class="list-group-item list-group-item-action contact-item"
+                                data-id="@contact.Id"
+                                data-name="@contact.Surname @contact.Name"
+                                data-email="@contact.Email"
                                 data-search="@($"{contact.Surname} {contact.Name} {contact.Email}".ToLower())">
-                                <form asp-action="LinkContact" method="post" class="d-flex justify-content-between align-items-center">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="clientId" value="@Model.Id" />
-                                    <input type="hidden" name="contactId" value="@contact.Id" />
+                                <div class="d-flex justify-content-between align-items-center">
                                     <div>
                                         <div class="fw-semibold">@contact.Surname @contact.Name</div>
                                         <small class="text-muted">@contact.Email</small>
                                     </div>
-                                    <button type="submit" class="btn btn-sm btn-primary ms-3 flex-shrink-0">Link</button>
-                                </form>
+                                    <button class="btn btn-sm btn-primary ms-3 flex-shrink-0"
+                                            onclick="linkContact(@contact.Id, '@contact.Surname @contact.Name', '@contact.Email')">
+                                        Link
+                                    </button>
+                                </div>
                             </li>
                         }
                     }
                 </ul>
             </div>
-
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
             </div>
-
         </div>
     </div>
 </div>
@@ -164,25 +158,127 @@
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
     <script>
-        // Live search inside modal
+        const clientId = @Model.Id;
+        const token = () => document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+        function showStatus(message, type = 'success') {
+            const el = document.getElementById('statusMessage');
+            el.textContent = message;
+            el.className = `alert alert-${type} mb-3`;
+            setTimeout(() => el.className = 'alert d-none mb-3', 3000);
+        }
+
+        function updateContactCount() {
+            const count = document.querySelectorAll('#linkedContactsBody tr').length;
+            document.getElementById('contactCount').textContent = count;
+        }
+
+        async function linkContact(contactId, contactName, contactEmail) {
+            try {
+                const form = new FormData();
+                form.append('clientId', clientId);
+                form.append('contactId', contactId);
+
+                const res = await fetch('/Client/LinkContact', {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'RequestVerificationToken': token()
+                    },
+                    body: form
+                });
+
+                if (!res.ok) throw new Error();
+
+                const tbody = document.getElementById('linkedContactsBody');
+                const row = document.createElement('tr');
+                row.id = `contact-row-${contactId}`;
+                row.innerHTML = `
+                    <td>${contactName}</td>
+                    <td>${contactEmail}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger"
+                                onclick="unlinkContact(${contactId}, '${contactName}')">
+                            Unlink
+                        </button>
+                    </td>`;
+                tbody.appendChild(row);
+
+              
+                document.getElementById('linkedContactsTable').classList.remove('d-none');
+                const empty = document.getElementById('emptyContacts');
+                if (empty) empty.classList.add('d-none');
+
+                document.querySelectorAll('#contactList .contact-item').forEach(item => {
+                    if (parseInt(item.dataset.id) === contactId) item.remove();
+                });
+
+                if (document.querySelectorAll('#contactList .contact-item').length === 0) {
+                    document.getElementById('contactList').innerHTML =
+                        '<li class="list-group-item text-muted fst-italic">All contacts are already linked.</li>';
+                    document.getElementById('linkContactBtn').disabled = true;
+                }
+
+                updateContactCount();
+                showStatus(`"${contactName}" linked successfully.`);
+            } catch {
+                showStatus('Link failed. Please try again.', 'danger');
+            }
+        }
+
+
+        async function unlinkContact(contactId, contactName) {
+            if (!confirm(`Unlink "${contactName}"?`)) return;
+
+            try {
+                const form = new FormData();
+                form.append('clientId', clientId);
+                form.append('contactId', contactId);
+
+                const res = await fetch('/Client/UnlinkContact', {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'RequestVerificationToken': token()
+                    },
+                    body: form
+                });
+
+                if (!res.ok) throw new Error();
+
+                const row = document.getElementById(`contact-row-${contactId}`);
+                row.style.transition = 'opacity 0.3s';
+                row.style.opacity = '0';
+                setTimeout(() => {
+                    row.remove();
+                    updateContactCount();
+
+                    if (document.querySelectorAll('#linkedContactsBody tr').length === 0) {
+                        document.getElementById('linkedContactsTable').classList.add('d-none');
+                        const empty = document.getElementById('emptyContacts');
+                        if (empty) empty.classList.remove('d-none');
+                    }
+                }, 300);
+
+                showStatus(`"${contactName}" unlinked successfully.`);
+            } catch {
+                showStatus('Unlink failed. Please try again.', 'danger');
+            }
+        }
+
+
         function filterContacts(query) {
             const q = query.toLowerCase().trim();
             document.querySelectorAll('#contactList .contact-item').forEach(item => {
-                const match = item.dataset.search.includes(q);
-                item.style.display = match ? '' : 'none';
+                item.style.display = item.dataset.search.includes(q) ? '' : 'none';
             });
         }
 
-        // Clear search when modal closes
         document.getElementById('linkContactModal').addEventListener('hidden.bs.modal', () => {
             const input = document.getElementById('contactSearch');
-            if (input) {
-                input.value = '';
-                filterContacts('');
-            }
+            if (input) { input.value = ''; filterContacts(''); }
         });
 
-        // Auto-open Contacts tab if redirected back after link/unlink
         const params = new URLSearchParams(window.location.search);
         if (params.get('tab') === 'contacts') {
             const tabEl = document.querySelector('[data-bs-target="#tab-contacts"]');

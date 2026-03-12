@@ -19,7 +19,7 @@ namespace client_contact_management.Controllers
         }
         public async Task<IActionResult> Index(CancellationToken ct)
         {
-            return View(); // no model needed — data loaded via AJAX
+            return View();
         }
 
         [HttpGet]
@@ -79,12 +79,20 @@ namespace client_contact_management.Controllers
         public async Task<IActionResult> LinkContact(int clientId, int contactId, CancellationToken ct)
         {
             await _clientService.LinkContactAsync(clientId, contactId, ct);
+
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                return Ok();
+
             return RedirectToAction(nameof(Edit), new { id = clientId, tab = "contacts" });
         }
 
         public async Task<IActionResult> UnlinkContact(int clientId, int contactId, CancellationToken ct)
         {
             await _clientService.UnlinkContactAsync(clientId, contactId, ct);
+
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                return Ok();
+
             return RedirectToAction(nameof(Edit), new { id = clientId, tab = "contacts" });
         }
 
@@ -100,12 +108,9 @@ namespace client_contact_management.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id, CancellationToken ct)
         {
             await _clientService.DeleteAsync(id, ct);
-
-            // AJAX request — return 200 so the view can remove the row
             if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
                 return Ok();
 
-            // Normal POST — redirect to Index
             return RedirectToAction(nameof(Index));
         }
 

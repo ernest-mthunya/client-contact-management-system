@@ -19,8 +19,6 @@
 
 @section Scripts {
     <script>
-        // ── Load ──────────────────────────────────────────────────────────────────
-
         async function loadClients() {
             try {
                 const res = await fetch('/Client/GetClients', {
@@ -68,8 +66,6 @@
                 </table>`;
         }
 
-        // ── Delete ────────────────────────────────────────────────────────────────
-
         async function deleteClient(id, name) {
             if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
 
@@ -84,14 +80,12 @@
 
                 if (!res.ok) throw new Error();
 
-                // Fade out and remove the row
                 const row = document.getElementById(`row-${id}`);
                 row.style.transition = 'opacity 0.3s';
                 row.style.opacity = '0';
                 setTimeout(() => {
                     row.remove();
 
-                    // Show empty state if no rows remain
                     if (document.querySelectorAll('#clientTableBody tr').length === 0) {
                         document.getElementById('clientTableContainer').innerHTML =
                             '<p class="text-muted fst-italic">No client(s) found.</p>';
@@ -103,8 +97,6 @@
                 showStatus('Delete failed. Please try again.', 'danger');
             }
         }
-
-        // ── Helpers ───────────────────────────────────────────────────────────────
 
         function showStatus(message, type = 'success') {
             const el = document.getElementById('statusMessage');
