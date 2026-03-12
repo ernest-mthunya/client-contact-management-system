@@ -27,13 +27,20 @@ namespace client_contact_management.Controllers
         public async Task<IActionResult> Create(ContactRequest contact, CancellationToken ct)
         {
             if (!await _contactService.IsEmailUniqueAsync(contact.Email, ct: ct))
-                ModelState.AddModelError(nameof(contact.Email), "This email address is already in use.");
+                ModelState.AddModelError(nameof(contact.Email), "Email address is already in use.");
 
             if (ModelState.IsValid)
             {
                 int newId = await _contactService.AddAsync(contact, ct);
+
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    return Json(new { id = newId });
+
                 return RedirectToAction(nameof(Edit), new { id = newId });
             }
+
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                return BadRequest(new { error = "Email address is already in use." });
 
             return View(contact);
         }
