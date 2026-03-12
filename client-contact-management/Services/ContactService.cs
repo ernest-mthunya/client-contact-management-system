@@ -13,57 +13,45 @@ namespace client_contact_management.Services
         {
             _context = context;
         }
-        public async Task<int> AddAsync(ContactRequest contact, CancellationToken ct = default)
+
+        public async Task<int> AddAsync(ContactRequest request, CancellationToken ct = default)
         {
             var entity = new Contact
             {
-                Name = contact.Name,
-                Surname = contact.Surname,
-                Email = contact.Email
+                Name = request.Name,
+                Surname = request.Surname,
+                Email = request.Email
             };
 
             _context.Contacts.Add(entity);
             await _context.SaveChangesAsync(ct);
-
             return entity.Id;
         }
 
-        // ─────────────────────────────────────────
-        // Update
-        // ─────────────────────────────────────────
-        public async Task UpdateAsync(ContactRequest contact, CancellationToken ct = default)
+        public async Task UpdateAsync(ContactRequest request, CancellationToken ct = default)
         {
-            var existing = await _context.Contacts.FindAsync(new object[] { contact.Id }, ct);
-            if (existing == null) return;
+            var entity = await _context.Contacts.FindAsync(new object[] { request.Id }, ct);
+            if (entity == null) return;
 
-            existing.Name = contact.Name;
-            existing.Surname = contact.Surname;
-            existing.Email = contact.Email;
-
+            entity.Name = request.Name;
+            entity.Surname = request.Surname;
+            entity.Email = request.Email;
             await _context.SaveChangesAsync(ct);
         }
 
-        // ─────────────────────────────────────────
-        // Delete
-        // ─────────────────────────────────────────
         public async Task DeleteAsync(int id, CancellationToken ct = default)
         {
-            var contact = await _context.Contacts.FindAsync(new object[] { id }, ct);
-            if (contact == null) return;
+            var entity = await _context.Contacts.FindAsync(new object[] { id }, ct);
+            if (entity == null) return;
 
-            _context.Contacts.Remove(contact);
+            _context.Contacts.Remove(entity);
             await _context.SaveChangesAsync(ct);
         }
 
-        // ─────────────────────────────────────────
-        // Get all — for Index view, ordered by Surname then Name
-        // ─────────────────────────────────────────
-        public async Task<IEnumerable<ContactResponse>> GetAllAsync(CancellationToken ct = default)
-        {
-            return await _context.Contacts
+        public async Task<IEnumerable<ContactResponse>> GetAllAsync(CancellationToken ct = default) =>
+            await _context.Contacts
                 .Include(c => c.ClientContacts)
-                .OrderBy(c => c.Surname)
-                .ThenBy(c => c.Name)
+                .OrderBy(c => c.Surname).ThenBy(c => c.Name)
                 .Select(c => new ContactResponse
                 {
                     Id = c.Id,
@@ -73,11 +61,7 @@ namespace client_contact_management.Services
                     NumberOfClientsLinked = c.ClientContacts.Count
                 })
                 .ToListAsync(ct);
-        }
 
-        // ─────────────────────────────────────────
-        // Get by Id — for Edit view (includes linked clients)
-        // ─────────────────────────────────────────
         public async Task<ContactResponse?> GetByIdAsync(int id, CancellationToken ct = default)
         {
             var contact = await _context.Contacts
@@ -106,9 +90,6 @@ namespace client_contact_management.Services
             };
         }
 
-        // ─────────────────────────────────────────
-        // Link client to contact (no-op if already linked)
-        // ─────────────────────────────────────────
         public async Task LinkClientAsync(int contactId, int clientId, CancellationToken ct = default)
         {
             bool alreadyLinked = await _context.ClientContacts
@@ -116,18 +97,10 @@ namespace client_contact_management.Services
 
             if (alreadyLinked) return;
 
-            _context.ClientContacts.Add(new ClientContact
-            {
-                ContactId = contactId,
-                ClientId = clientId
-            });
-
+            _context.ClientContacts.Add(new ClientContact { ContactId = contactId, ClientId = clientId });
             await _context.SaveChangesAsync(ct);
         }
 
-        // ─────────────────────────────────────────
-        // Unlink client from contact
-        // ─────────────────────────────────────────
         public async Task UnlinkClientAsync(int contactId, int clientId, CancellationToken ct = default)
         {
             var link = await _context.ClientContacts
@@ -139,13 +112,8 @@ namespace client_contact_management.Services
             await _context.SaveChangesAsync(ct);
         }
 
-        // ─────────────────────────────────────────
-        // Email uniqueness check (excludes self on edit)
-        // ─────────────────────────────────────────
-        public async Task<bool> IsEmailUniqueAsync(string email, int? excludeId = null, CancellationToken ct = default)
-        {
-            return !await _context.Contacts
+        public async Task<bool> IsEmailUniqueAsync(string email, int? excludeId = null, CancellationToken ct = default) =>
+            !await _context.Contacts
                 .AnyAsync(c => c.Email == email && (excludeId == null || c.Id != excludeId), ct);
-        }
     }
 }

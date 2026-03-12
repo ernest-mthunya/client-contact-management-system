@@ -17,57 +17,35 @@ namespace client_contact_management.Services
             _codeService = codeService;
         }
 
-        // ─────────────────────────────────────────
-        // Add — generates ClientCode, returns new Id
-        // ─────────────────────────────────────────
-        public async Task<int> AddAsync(ClientRequest client, CancellationToken ct = default)
+        public async Task<int> AddAsync(ClientRequest request, CancellationToken ct = default)
         {
-            string clientCode = await _codeService.Generate(client.Name, ct);
-
-            var entity = new Entities.Client
-            {
-                Name = client.Name,
-                ClientCode = clientCode
-            };
-
+            string clientCode = await _codeService.Generate(request.Name, ct);
+            var entity = new Client { Name = request.Name, ClientCode = clientCode };
             _context.Clients.Add(entity);
             await _context.SaveChangesAsync(ct);
-
             return entity.Id;
         }
 
-        // ─────────────────────────────────────────
-        // Update — only updates Name, never ClientCode
-        // ─────────────────────────────────────────
-        public async Task UpdateAsync(ClientRequest client, CancellationToken ct = default)
+        public async Task UpdateAsync(ClientRequest request, CancellationToken ct = default)
         {
-            var existing = await _context.Clients.FindAsync(new object[] { client.Id }, ct);
-            if (existing == null) return;
+            var entity = await _context.Clients.FindAsync(new object[] { request.Id }, ct);
+            if (entity == null) return;
 
-            existing.Name = client.Name;
-            // ClientCode is intentionally never changed after creation
-
+            entity.Name = request.Name;
             await _context.SaveChangesAsync(ct);
         }
 
-        // ─────────────────────────────────────────
-        // Delete
-        // ─────────────────────────────────────────
         public async Task DeleteAsync(int id, CancellationToken ct = default)
         {
-            var client = await _context.Clients.FindAsync(new object[] { id }, ct);
-            if (client == null) return;
+            var entity = await _context.Clients.FindAsync(new object[] { id }, ct);
+            if (entity == null) return;
 
-            _context.Clients.Remove(client);
+            _context.Clients.Remove(entity);
             await _context.SaveChangesAsync(ct);
         }
 
-        // ─────────────────────────────────────────
-        // Get all — for Index view
-        // ─────────────────────────────────────────
-        public async Task<IEnumerable<ClientResponse>> GetAllAsync(CancellationToken ct = default)
-        {
-            return await _context.Clients
+        public async Task<IEnumerable<ClientResponse>> GetAllAsync(CancellationToken ct = default) =>
+            await _context.Clients
                 .Include(c => c.ClientContacts)
                 .OrderBy(c => c.Name)
                 .Select(c => new ClientResponse
@@ -78,11 +56,7 @@ namespace client_contact_management.Services
                     NumberOfContactLinked = c.ClientContacts.Count
                 })
                 .ToListAsync(ct);
-        }
 
-        // ─────────────────────────────────────────
-        // Get by Id — for Edit view (includes linked contacts)
-        // ─────────────────────────────────────────
         public async Task<ClientResponse?> GetByIdAsync(int id, CancellationToken ct = default)
         {
             var client = await _context.Clients
@@ -106,15 +80,11 @@ namespace client_contact_management.Services
                         Surname = cc.Contact.Surname,
                         Email = cc.Contact.Email
                     })
-                    .OrderBy(c => c.Surname)
-                    .ThenBy(c => c.Name)
+                    .OrderBy(c => c.Surname).ThenBy(c => c.Name)
                     .ToList()
             };
         }
 
-        // ─────────────────────────────────────────
-        // Link contact to client (skips if already linked)
-        // ─────────────────────────────────────────
         public async Task LinkContactAsync(int clientId, int contactId, CancellationToken ct = default)
         {
             bool alreadyLinked = await _context.ClientContacts
@@ -122,18 +92,10 @@ namespace client_contact_management.Services
 
             if (alreadyLinked) return;
 
-            _context.ClientContacts.Add(new ClientContact
-            {
-                ClientId = clientId,
-                ContactId = contactId
-            });
-
+            _context.ClientContacts.Add(new ClientContact { ClientId = clientId, ContactId = contactId });
             await _context.SaveChangesAsync(ct);
         }
 
-        // ─────────────────────────────────────────
-        // Unlink contact from client
-        // ─────────────────────────────────────────
         public async Task UnlinkContactAsync(int clientId, int contactId, CancellationToken ct = default)
         {
             var link = await _context.ClientContacts
