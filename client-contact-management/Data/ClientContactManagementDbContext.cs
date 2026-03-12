@@ -22,12 +22,14 @@ namespace client_contact_management.Data
             modelBuilder.Entity<ClientContact>()
                 .HasOne(cc => cc.Client)
                 .WithMany(c => c.ClientContacts)
-                .HasForeignKey(cc => cc.ClientId);
+                .HasForeignKey(cc => cc.ClientId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<ClientContact>()
                 .HasOne(cc => cc.Contact)
                 .WithMany(c => c.ClientContacts)
-                .HasForeignKey(cc => cc.ContactId);
+                .HasForeignKey(cc => cc.ContactId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Client>()
                 .HasIndex(c => c.ClientCode)

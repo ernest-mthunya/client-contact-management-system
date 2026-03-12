@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using client_contact_management.Data;
 
@@ -10,9 +11,11 @@ using client_contact_management.Data;
 namespace client_contact_management.Migrations
 {
     [DbContext(typeof(ClientContactManagementDbContext))]
-    partial class ClientContactManagementDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260312075612_AddedCascadeDelete")]
+    partial class AddedCascadeDelete
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

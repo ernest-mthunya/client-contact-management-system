@@ -35,7 +35,17 @@
                         <td style="text-align:left">@contact.Email</td>
                         <td style="text-align:center">@contact.NumberOfClientsLinked</td>
                         <td>
-                            <a asp-action="Edit" asp-route-id="@contact.Id" class="btn btn-sm btn-outline-secondary">Edit</a>
+                            <a asp-action="Edit" 
+                               asp-route-id="@contact.Id" 
+                               class="btn btn-sm btn-outline-secondary">Edit</a>
+                            <form asp-action="Delete"
+                                  asp-route-id="@contact.Id"
+                                  method="post"
+                                  class="d-inline"
+                                  onsubmit="return confirm('Delete @Html.Raw(contact.Name)? This cannot be undone.')">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                            </form>
                         </td>
                     </tr>
                 }
