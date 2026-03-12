@@ -35,11 +35,20 @@ namespace client_contact_management.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ClientRequest client, CancellationToken ct)
         {
+
             if (ModelState.IsValid)
             {
                 int newId = await _clientService.AddAsync(client, ct);
+
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    return Json(new { id = newId });
+
                 return RedirectToAction(nameof(Edit), new { id = newId });
             }
+
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                return BadRequest();
+
             return View(client);
         }
         public async Task<IActionResult> Edit(int id, CancellationToken ct)
