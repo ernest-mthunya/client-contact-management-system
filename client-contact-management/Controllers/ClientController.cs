@@ -19,14 +19,8 @@ namespace client_contact_management.Controllers
         }
         public async Task<IActionResult> Index(CancellationToken ct)
         {
-            return View();
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> GetClients(CancellationToken ct)
-        {
             var clients = await _clientService.GetAllAsync(ct);
-            return Json(clients);
+            return View(clients);
         }
 
         public IActionResult Create() => View(new ClientRequest());

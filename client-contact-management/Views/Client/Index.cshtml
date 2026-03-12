@@ -1,4 +1,6 @@
-﻿@{
+﻿@model IEnumerable<ClientResponse>
+
+@{
     ViewData["Title"] = "Clients";
 }
 
@@ -12,60 +14,46 @@
 
     <div id="statusMessage" class="alert d-none mb-3" role="alert"></div>
 
-    <div id="clientTableContainer">
-        <p class="text-muted">Loading...</p>
-    </div>
+    @if (!Model.Any())
+    {
+        <p class="text-muted fst-italic">No client(s) found.</p>
+    }
+    else
+    {
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th style="text-align:left">Name</th>
+                    <th style="text-align:left">Client Code</th>
+                    <th style="text-align:center">No. of linked contacts</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="clientTableBody">
+                @foreach (var client in Model)
+                {
+                    <tr id="row-@client.Id">
+                        <td style="text-align:left">@client.Name</td>
+                        <td style="text-align:left">@client.ClientCode</td>
+                        <td style="text-align:center">@client.NumberOfContactLinked</td>
+                        <td class="text-end">
+                            <a asp-action="Edit"
+                               asp-route-id="@client.Id"
+                               class="btn btn-sm btn-outline-secondary me-1">Link contacts</a>
+                            <button class="btn btn-sm btn-outline-danger"
+                                    onclick="deleteClient(@client.Id, '@client.Name')">
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
 </div>
 
 @section Scripts {
     <script>
-        async function loadClients() {
-            try {
-                const res = await fetch('/Client/GetClients', {
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                });
-                if (!res.ok) throw new Error();
-                renderTable(await res.json());
-            } catch {
-                document.getElementById('clientTableContainer').innerHTML =
-                    '<p class="text-danger">Failed to load clients. Please refresh.</p>';
-            }
-        }
-
-        function renderTable(clients) {
-            const container = document.getElementById('clientTableContainer');
-
-            if (clients.length === 0) {
-                container.innerHTML = '<p class="text-muted fst-italic">No client(s) found.</p>';
-                return;
-            }
-
-            const rows = clients.map(c => `
-                <tr id="row-${c.id}">
-                    <td style="text-align:left">${c.name}</td>
-                    <td style="text-align:left">${c.clientCode}</td>
-                    <td style="text-align:center">${c.numberOfContactLinked}</td>
-                    <td class="text-end">
-                        <a href="/Client/Edit/${c.id}" class="btn btn-sm btn-outline-secondary me-1">Edit</a>
-                        <button class="btn btn-sm btn-outline-danger"
-                                onclick="deleteClient(${c.id}, '${c.name}')">Delete</button>
-                    </td>
-                </tr>`).join('');
-
-            container.innerHTML = `
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th style="text-align:left">Name</th>
-                            <th style="text-align:left">Client Code</th>
-                            <th style="text-align:center">No. of linked contacts</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody id="clientTableBody">${rows}</tbody>
-                </table>`;
-        }
-
         async function deleteClient(id, name) {
             if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
 
@@ -87,8 +75,9 @@
                     row.remove();
 
                     if (document.querySelectorAll('#clientTableBody tr').length === 0) {
-                        document.getElementById('clientTableContainer').innerHTML =
+                        document.querySelector('.container').innerHTML +=
                             '<p class="text-muted fst-italic">No client(s) found.</p>';
+                        document.querySelector('table').remove();
                     }
                 }, 300);
 
@@ -104,7 +93,5 @@
             el.className = `alert alert-${type} mb-3`;
             setTimeout(() => el.className = 'alert d-none mb-3', 3000);
         }
-
-        loadClients();
     </script>
 }
