@@ -86,12 +86,20 @@ namespace client_contact_management.Controllers
         public async Task<IActionResult> LinkClient(int contactId, int clientId, CancellationToken ct)
         {
             await _contactService.LinkClientAsync(contactId, clientId, ct);
+
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                return Ok();
+
             return RedirectToAction(nameof(Edit), new { id = contactId, tab = "clients" });
         }
 
         public async Task<IActionResult> UnlinkClient(int contactId, int clientId, CancellationToken ct)
         {
             await _contactService.UnlinkClientAsync(contactId, clientId, ct);
+
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                return Ok();
+
             return RedirectToAction(nameof(Edit), new { id = contactId, tab = "clients" });
         }
 

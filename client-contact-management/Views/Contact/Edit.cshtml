@@ -183,7 +183,6 @@
             if (input) { input.value = ''; filterClients(''); }
         });
 
-        // Auto-open Clients tab if redirected back after link/unlink
         const params = new URLSearchParams(window.location.search);
         if (params.get('tab') === 'clients') {
             const tabEl = document.querySelector('[data-bs-target="#tab-clients"]');
