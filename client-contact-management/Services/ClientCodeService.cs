@@ -13,13 +13,11 @@ namespace client_contact_management.Services
         }
         public async Task<string> Generate(string clientName, CancellationToken ct = default)
         {
-            // Extract only letters from the name, uppercase
             var letters = new string(clientName
                 .ToUpper()
                 .Where(char.IsLetter)
                 .ToArray());
 
-            // Build 3-char alpha prefix; pad with A-Z if needed
             string alpha;
             if (letters.Length >= 3)
             {
@@ -38,7 +36,6 @@ namespace client_contact_management.Services
                 alpha = padded;
             }
 
-            // Increment numeric suffix until we find a unique code
             int counter = 1;
             string code;
             bool exists;
@@ -46,8 +43,6 @@ namespace client_contact_management.Services
             do
             {
                 code = $"{alpha}{counter:D3}";
-                // Now it's truly async and honors the CancellationToken
-                // Ensure you are using the EF Core extension method
                 exists = await _context.Clients.AnyAsync<Client>(c => c.ClientCode == code, ct);
                 counter++;
             }
