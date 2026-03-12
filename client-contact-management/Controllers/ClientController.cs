@@ -17,11 +17,16 @@ namespace client_contact_management.Controllers
             _clientService = clientService;
             _contactService = contactService;
         }
-
         public async Task<IActionResult> Index(CancellationToken ct)
         {
+            return View(); // no model needed — data loaded via AJAX
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetClients(CancellationToken ct)
+        {
             var clients = await _clientService.GetAllAsync(ct);
-            return View(clients);
+            return Json(clients);
         }
 
         public IActionResult Create() => View(new ClientRequest());
@@ -95,6 +100,12 @@ namespace client_contact_management.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id, CancellationToken ct)
         {
             await _clientService.DeleteAsync(id, ct);
+
+            // AJAX request — return 200 so the view can remove the row
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                return Ok();
+
+            // Normal POST — redirect to Index
             return RedirectToAction(nameof(Index));
         }
 

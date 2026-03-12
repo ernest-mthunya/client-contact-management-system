@@ -1,8 +1,8 @@
-﻿@model IEnumerable<ClientResponse>
-
-@{
+﻿@{
     ViewData["Title"] = "Clients";
 }
+
+@Html.AntiForgeryToken()
 
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -10,45 +10,109 @@
         <a asp-action="Create" class="btn btn-primary">+ New Client</a>
     </div>
 
-    @if (!Model.Any())
-    {
-        <p class="text-muted fst-italic">No client(s) found.</p>
-    }
-    else
-    {
-        <table class="table table-hover align-middle">
-            <thead class="table-light">
-                <tr>
-                    <th style="text-align:left">Name</th>
-                    <th style="text-align:left">Client Code</th>
-                    <th style="text-align:center">No. of linked contacts</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var client in Model)
-                {
-                    <tr>
-                        <td style="text-align:left">@client.Name</td>
-                        <td style="text-align:left">@client.ClientCode</td>
-                        <td style="text-align:center">@client.NumberOfContactLinked</td>
-                        <td>
-                            <a asp-action="Edit" 
-                               asp-route-id="@client.Id" 
-                               class="btn btn-sm btn-outline-secondary">Link Contacts</a>
+    <div id="statusMessage" class="alert d-none mb-3" role="alert"></div>
 
-                            <form asp-action="Delete"
-                                  asp-route-id="@client.Id"
-                                  method="post"
-                                  class="d-inline"
-                                  onsubmit="return confirm('Delete @Html.Raw(client.Name)? This cannot be undone.')">
-                                @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
-                            </form>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    }
+    <div id="clientTableContainer">
+        <p class="text-muted">Loading...</p>
+    </div>
 </div>
+
+@section Scripts {
+    <script>
+        // ── Load ──────────────────────────────────────────────────────────────────
+
+        async function loadClients() {
+            try {
+                const res = await fetch('/Client/GetClients', {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (!res.ok) throw new Error();
+                renderTable(await res.json());
+            } catch {
+                document.getElementById('clientTableContainer').innerHTML =
+                    '<p class="text-danger">Failed to load clients. Please refresh.</p>';
+            }
+        }
+
+        function renderTable(clients) {
+            const container = document.getElementById('clientTableContainer');
+
+            if (clients.length === 0) {
+                container.innerHTML = '<p class="text-muted fst-italic">No client(s) found.</p>';
+                return;
+            }
+
+            const rows = clients.map(c => `
+                <tr id="row-${c.id}">
+                    <td style="text-align:left">${c.name}</td>
+                    <td style="text-align:left">${c.clientCode}</td>
+                    <td style="text-align:center">${c.numberOfContactLinked}</td>
+                    <td class="text-end">
+                        <a href="/Client/Edit/${c.id}" class="btn btn-sm btn-outline-secondary me-1">Edit</a>
+                        <button class="btn btn-sm btn-outline-danger"
+                                onclick="deleteClient(${c.id}, '${c.name}')">Delete</button>
+                    </td>
+                </tr>`).join('');
+
+            container.innerHTML = `
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="text-align:left">Name</th>
+                            <th style="text-align:left">Client Code</th>
+                            <th style="text-align:center">No. of linked contacts</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="clientTableBody">${rows}</tbody>
+                </table>`;
+        }
+
+        // ── Delete ────────────────────────────────────────────────────────────────
+
+        async function deleteClient(id, name) {
+            if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+
+            try {
+                const res = await fetch(`/Client/Delete/${id}`, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    }
+                });
+
+                if (!res.ok) throw new Error();
+
+                // Fade out and remove the row
+                const row = document.getElementById(`row-${id}`);
+                row.style.transition = 'opacity 0.3s';
+                row.style.opacity = '0';
+                setTimeout(() => {
+                    row.remove();
+
+                    // Show empty state if no rows remain
+                    if (document.querySelectorAll('#clientTableBody tr').length === 0) {
+                        document.getElementById('clientTableContainer').innerHTML =
+                            '<p class="text-muted fst-italic">No client(s) found.</p>';
+                    }
+                }, 300);
+
+                showStatus(`"${name}" deleted successfully.`);
+            } catch {
+                showStatus('Delete failed. Please try again.', 'danger');
+            }
+        }
+
+        // ── Helpers ───────────────────────────────────────────────────────────────
+
+        function showStatus(message, type = 'success') {
+            const el = document.getElementById('statusMessage');
+            el.textContent = message;
+            el.className = `alert alert-${type} mb-3`;
+            setTimeout(() => el.className = 'alert d-none mb-3', 3000);
+        }
+
+        loadClients();
+    </script>
+}
