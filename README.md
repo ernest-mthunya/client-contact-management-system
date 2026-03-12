@@ -94,53 +94,6 @@ dotnet run
 
 The application will start and can be accessed through the browser using the provided local URL.
 
-Project Structure
-client-contact-management/
-│
-├── Controllers/
-│   ├── ClientController.cs
-│   └── ContactController.cs
-│
-├── Data/
-│   └── ClientContactManagementDbContext.cs
-│
-├── Entities/
-│   ├── Client.cs
-│   ├── Contact.cs
-│   └── ClientContact.cs
-│
-├── Migrations/
-│
-├── Models/
-│   ├── ClientRequest.cs
-│   ├── ClientResponse.cs
-│   ├── ContactRequest.cs
-│   └── ContactResponse.cs
-│
-├── Services/
-│   ├── ICrudService.cs
-│   ├── IClientService.cs
-│   ├── IContactService.cs
-│   ├── ClientService.cs
-│   ├── ContactService.cs
-│   └── ClientCodeService.cs
-│
-├── Views/
-│   ├── Client/
-│   │   ├── Index.cshtml
-│   │   ├── Create.cshtml
-│   │   ├── Edit.cshtml
-│   │   └── Delete.cshtml
-│   │
-│   └── Contact/
-│       ├── Index.cshtml
-│       ├── Create.cshtml
-│       ├── Edit.cshtml
-│       └── Delete.cshtml
-│
-├── appsettings.json
-├── Program.cs
-└── README.md
 Architecture Overview
 
 The application follows a layered architecture:
