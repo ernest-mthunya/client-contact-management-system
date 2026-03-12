@@ -4,11 +4,15 @@
     ViewData["Title"] = "Contacts";
 }
 
+@Html.AntiForgeryToken()
+
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0">Contacts</h2>
         <a asp-action="Create" class="btn btn-primary">+ New Contact</a>
     </div>
+
+    <div id="statusMessage" class="alert d-none mb-3" role="alert"></div>
 
     @if (!Model.Any())
     {
@@ -26,26 +30,22 @@
                     <th></th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="contactTableBody">
                 @foreach (var contact in Model)
                 {
-                    <tr>
+                    <tr id="row-@contact.Id">
                         <td style="text-align:left">@contact.Name</td>
                         <td style="text-align:left">@contact.Surname</td>
                         <td style="text-align:left">@contact.Email</td>
                         <td style="text-align:center">@contact.NumberOfClientsLinked</td>
-                        <td>
-                            <a asp-action="Edit" 
-                               asp-route-id="@contact.Id" 
-                               class="btn btn-sm btn-outline-secondary">Link clients</a>
-                            <form asp-action="Delete"
-                                  asp-route-id="@contact.Id"
-                                  method="post"
-                                  class="d-inline"
-                                  onsubmit="return confirm('Delete @Html.Raw(contact.Name)? This cannot be undone.')">
-                                @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
-                            </form>
+                        <td class="text-end">
+                            <a asp-action="Edit"
+                               asp-route-id="@contact.Id"
+                               class="btn btn-sm btn-outline-secondary me-1">Edit</a>
+                            <button class="btn btn-sm btn-outline-danger"
+                                    onclick="deleteContact(@contact.Id, '@contact.Name')">
+                                Delete
+                            </button>
                         </td>
                     </tr>
                 }
@@ -53,3 +53,47 @@
         </table>
     }
 </div>
+
+@section Scripts {
+    <script>
+        async function deleteContact(id, name) {
+            if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+
+            try {
+                const res = await fetch(`/Contact/Delete/${id}`, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    }
+                });
+
+                if (!res.ok) throw new Error();
+
+                const row = document.getElementById(`row-${id}`);
+                row.style.transition = 'opacity 0.3s';
+                row.style.opacity = '0';
+                setTimeout(() => {
+                    row.remove();
+
+                    if (document.querySelectorAll('#contactTableBody tr').length === 0) {
+                        document.querySelector('table').remove();
+                        document.querySelector('.container').innerHTML +=
+                            '<p class="text-muted fst-italic">No contact(s) found.</p>';
+                    }
+                }, 300);
+
+                showStatus(`"${name}" deleted successfully.`);
+            } catch {
+                showStatus('Delete failed. Please try again.', 'danger');
+            }
+        }
+
+        function showStatus(message, type = 'success') {
+            const el = document.getElementById('statusMessage');
+            el.textContent = message;
+            el.className = `alert alert-${type} mb-3`;
+            setTimeout(() => el.className = 'alert d-none mb-3', 3000);
+        }
+    </script>
+}

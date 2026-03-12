@@ -100,6 +100,10 @@ namespace client_contact_management.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id, CancellationToken ct)
         {
             await _contactService.DeleteAsync(id, ct);
+
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                return Ok();
+
             return RedirectToAction(nameof(Index));
         }
 
