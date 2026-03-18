@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="../client-contact-management.tests/client-contact-management.tests.csproj" Id="5aa46625-8a5b-4e7a-b9df-5bb5b5930bd6" />
   <Project Path="client-contact-management.csproj" />
 </Solution>
