@@ -9,13 +9,14 @@
 }
 
 <div class="container mt-4">
-
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <a asp-action="Index" class="text-muted small text-decoration-none">← Contacts</a>
             <h2 class="mb-0 mt-1">Edit Contact</h2>
         </div>
     </div>
+
+    <div id="statusMessage" class="alert d-none mb-3" role="alert"></div>
 
     <ul class="nav nav-tabs mb-0" id="contactTabs">
         <li class="nav-item">
@@ -24,7 +25,7 @@
         <li class="nav-item">
             <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-clients">
                 Client(s)
-                <span class="badge bg-secondary ms-1">@linkedClients.Count</span>
+                <span class="badge bg-secondary ms-1" id="clientCount">@linkedClients.Count</span>
             </button>
         </li>
     </ul>
@@ -60,11 +61,11 @@
         </div>
 
         <div class="tab-pane fade" id="tab-clients">
-
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="mb-0">Linked Clients</h5>
                 <button type="button"
                         class="btn btn-sm btn-primary"
+                        id="linkClientBtn"
                         data-bs-toggle="modal"
                         data-bs-target="#linkClientModal"
                     @(availableClients.Count == 0 ? "disabled" : "")
@@ -75,54 +76,45 @@
 
             @if (!linkedClients.Any())
             {
-                <p class="text-muted fst-italic">No contact(s) found.</p>
+                <p id="emptyClients" class="text-muted fst-italic">No clients found.</p>
             }
-            else
-            {
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th style="text-align:left">Client Name</th>
-                            <th style="text-align:left">Client Code</th>
-                            <th style="text-align:left; width:80px"></th>
+
+            <table class="table table-hover align-middle @(!linkedClients.Any() ? "d-none" : "")" id="linkedClientsTable">
+                <thead class="table-light">
+                    <tr>
+                        <th style="text-align:left">Client Name</th>
+                        <th style="text-align:left">Client Code</th>
+                        <th style="width:80px"></th>
+                    </tr>
+                </thead>
+                <tbody id="linkedClientsBody">
+                    @foreach (var client in linkedClients)
+                    {
+                        <tr id="client-row-@client.Id">
+                            <td>@client.Name</td>
+                            <td>@client.ClientCode</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-danger"
+                                        onclick="unlinkClient(@client.Id, '@client.Name')">
+                                    Unlink
+                                </button>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var client in linkedClients)
-                        {
-                            <tr>
-                                <td>@client.Name</td>
-                                <td>@client.ClientCode</td>
-                                <td>
-                                    <a asp-action="UnlinkClient"
-                                           asp-route-contactId="@Model.Id"
-                                           asp-route-clientId="@client.Id"
-                                           class="btn btn-sm btn-outline-danger"
-                                           onclick="return confirm('Unlink @client.Name?')">
-                                        Unlink
-                                    </a>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            }
+                    }
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 
-
 <div class="modal fade" id="linkClientModal" tabindex="-1" aria-labelledby="linkClientModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
-
             <div class="modal-header">
                 <h5 class="modal-title" id="linkClientModalLabel">Link a Client</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-
             <div class="modal-body p-0">
-
                 <div class="p-3 border-bottom">
                     <input type="text"
                            id="clientSearch"
@@ -130,7 +122,6 @@
                            placeholder="Search by name or code…"
                            oninput="filterClients(this.value)" />
                 </div>
-
                 <ul class="list-group list-group-flush" id="clientList">
                     @if (!availableClients.Any())
                     {
@@ -141,27 +132,28 @@
                         @foreach (var client in availableClients.OrderBy(c => c.Name))
                         {
                             <li class="list-group-item list-group-item-action client-item"
+                                data-id="@client.Id"
+                                data-name="@client.Name"
+                                data-code="@client.ClientCode"
                                 data-search="@($"{client.Name} {client.ClientCode}".ToLower())">
-                                <form asp-action="LinkClient" method="post" class="d-flex justify-content-between align-items-center">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="contactId" value="@Model.Id" />
-                                    <input type="hidden" name="clientId" value="@client.Id" />
+                                <div class="d-flex justify-content-between align-items-center">
                                     <div>
                                         <div class="fw-semibold">@client.Name</div>
                                         <small class="text-muted">@client.ClientCode</small>
                                     </div>
-                                    <button type="submit" class="btn btn-sm btn-primary ms-3 flex-shrink-0">Link</button>
-                                </form>
+                                    <button class="btn btn-sm btn-primary ms-3 flex-shrink-0"
+                                            onclick="linkClient(@client.Id, '@client.Name', '@client.ClientCode')">
+                                        Link
+                                    </button>
+                                </div>
                             </li>
                         }
                     }
                 </ul>
             </div>
-
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
             </div>
-
         </div>
     </div>
 </div>
@@ -170,5 +162,8 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+    <script>
+        const contactId = @Model.Id;
+    </script>
     <script src="~/js/contact-edit.js" asp-append-version="true"></script>
 }
